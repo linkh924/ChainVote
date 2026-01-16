@@ -42,7 +42,7 @@ const vote = async (index) => {
         const argv = JSON.parse("[" + callData + "]"); 
         await voteTocontract(argv);
 
-        alert('成功投票給 No.${index+1}');
+        alert('成功投票給No.' + (index + 1));
     } catch (error) {
         alert('投票過程中發生錯誤!');
     }

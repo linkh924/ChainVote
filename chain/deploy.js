@@ -27,7 +27,7 @@ async function main() {
   console.log("當前最新 Nonce 應該為:", latestNonce);
 
   const privateKey01 = process.env.DEPLOYER_WALLET_PRIVATE_KEY01;
-  const wallet01 = new ethers.Wallet(privateKey01, provider); // wallet private key
+  // const wallet01 = new ethers.Wallet(privateKey01, provider); // wallet private key
 
   // deploy ballotManager contract
   const ballotManagerPath = join(__dirname, "../artifacts/contracts/ballotManager.sol/ballotManager.json");    
@@ -40,7 +40,8 @@ async function main() {
     ["10209775308811493123219977751870536028325781179662633829382233991134085591271", "10463201402378381645770001492167936758751449996873528340577630879574526767592"], // pk
     ["LIN", "KUAN", "HAO"], // names
     ["QmHashA123", "QmHashB456", "QmHashC789"], // ipfsCID
-    60 // durationTime
+    60, // durationTime
+    ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "0x90F79bf6EB2c4f870365E785982E1f101E93b906", "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"]
   ];
   const ballotManager = await ballotFactory.deploy(...args, { nonce: latestNonce });
   await ballotManager.waitForDeployment();

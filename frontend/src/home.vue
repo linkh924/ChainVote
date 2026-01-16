@@ -190,10 +190,10 @@ if (window.ethereum) {
     margin: 0;
 }
 .btn {
-    padding: 15px 30px;
+    padding: 8px 30px;
     font-size: 16px;
     /* border: none; */
-    border-radius: 25px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;

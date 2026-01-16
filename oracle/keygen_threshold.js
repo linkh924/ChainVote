@@ -46,8 +46,8 @@ async function main() {
     const babyJub = await buildBabyjub();
     const F = babyJub.F;
     const G = babyJub.Base8;
-    const totalSk = getRandomBigInt();
-    // const totalSk = BigInt("1097094918319998294314187");
+    // const totalSk = getRandomBigInt();
+    const totalSk = BigInt("1097094918319998294314187");
     const pk = babyJub.mulPointEscalar(G, totalSk);
     const allShares = generateThresholdShares(totalSk, 5, 3);
     console.log("Mastersk:", totalSk.toString());

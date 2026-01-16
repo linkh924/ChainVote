@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 const isMenuOpen = ref(false)
+const isResultDropdownOpen = ref(false)
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -9,6 +10,11 @@ const toggleMenu = () => {
 
 const closeMenu = () => {
   isMenuOpen.value = false
+  isResultDropdownOpen.value = false
+}
+
+const toggleResultDropdown = () => {
+  isResultDropdownOpen.value = !isResultDropdownOpen.value
 }
 </script>
 
@@ -30,7 +36,23 @@ const closeMenu = () => {
         <router-link to="/home" class="menu-item" @click="closeMenu">首頁</router-link>
         <router-link to="/info" class="menu-item" @click="closeMenu">資訊</router-link>
         <router-link to="/vote" class="menu-item" @click="closeMenu">投票</router-link>
-        <router-link to="/result" class="menu-item" @click="closeMenu">結果</router-link>
+        <div class="dropdown">
+          <button class="menu-item dropdown-btn" @click="toggleResultDropdown">
+            ☰ 結果
+          </button>
+          <div class="dropdown-content" :class="{ show: isResultDropdownOpen }">
+            <router-link to="/result?index=1" class="dropdown-item" @click="closeMenu()">結果1</router-link>
+            <router-link to="/result?index=2" class="dropdown-item" @click="closeMenu()">結果2</router-link>
+            <router-link to="/result?index=3" class="dropdown-item" @click="closeMenu()">結果3</router-link>
+            <router-link to="/result?index=4" class="dropdown-item" @click="closeMenu()">結果4</router-link>
+            <router-link to="/result?index=5" class="dropdown-item" @click="closeMenu()">結果5</router-link>
+            <router-link to="/result?index=6" class="dropdown-item" @click="closeMenu()">結果6</router-link>
+            <router-link to="/result?index=7" class="dropdown-item" @click="closeMenu()">結果7</router-link>
+            <router-link to="/result?index=8" class="dropdown-item" @click="closeMenu()">結果8</router-link>
+            <router-link to="/result?index=9" class="dropdown-item" @click="closeMenu()">結果9</router-link>
+            <router-link to="/result?index=10" class="dropdown-item" @click="closeMenu()">結果10</router-link>
+          </div>
+        </div>
       </div>
       <div class="search">
         <button class="search-btn">🔍</button>
@@ -148,6 +170,52 @@ const closeMenu = () => {
     opacity: 1;
 }
 
+.dropdown {
+    position: relative;
+}
+
+.dropdown-btn {
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #333;
+}
+
+.dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: white;
+    min-width: 180px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 8px 0;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    margin-top: 8px;
+}
+
+.dropdown-content.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: block;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #F5F5F5;
+}
+
 @media (max-width: 1024px) {
     .navbar {
         margin: 40px 100px;
@@ -210,6 +278,31 @@ const closeMenu = () => {
         max-height: 300px;
         opacity: 1;
         padding: 15px 0;
+    }
+
+    .dropdown {
+        width: 100%;
+    }
+
+    .dropdown-content {
+        position: static;
+        box-shadow: none;
+        background-color: #E8E8E8;
+        margin-top: 0;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        transition: max-height 0.3s ease;
+    }
+
+    .dropdown-content.show {
+        max-height: 500px;
+    }
+
+    .dropdown-item {
+        padding: 10px 30px;
     }
 
     .menu-item {

@@ -2,9 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "./verifier.sol";
+// import "./babyJub.sol";
 
 contract ballotManager{
     Groth16Verifier public verifier;
+    uint256 constant Q = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant A = 168700;
+    uint256 constant D = 168696;
+    uint256 constant R = 2736030358979909402780800718157159386076813972158567259200215660948447373041;
 
     struct candidate{
         string name;
@@ -18,24 +23,36 @@ contract ballotManager{
     uint256[2] public pk;
     uint256 public votingDeadline;
 
+    struct shareholder{
+        uint256 shareholderId;
+        bool isActive;
+    }
+    struct shareholderSi{
+        uint256[2][3] Si;
+        bool isSubmitted;
+    }
+    mapping(address => shareholder) public whiteList;
+    mapping(uint256 => shareholderSi) public shareholderSubmitInfo;
+
     event Vote(uint256 indexed nullifierHash, uint256[2][2] vote01Count, uint256[2][2] vote02Count, uint256[2][2] vote03Count);
 
     // verifier.sol's address
     constructor(
-        address _verifierAddress, 
+        address _verifierAddress,
         uint256 _officialRoot, 
         uint256 _nullifier,
         uint256[2] memory _pk,
         string[] memory _names,
         string[] memory _ipfsCID,
-        uint256 _durationTime
+        uint256 _durationTime,
+        address[5] memory _shareholderAddress
     ){
         verifier = Groth16Verifier(_verifierAddress);
         root = _officialRoot;
         nullifier = _nullifier;
         pk = _pk;
         votingDeadline = block.timestamp + (_durationTime * 1 minutes);
-        for(uint256 i = 0; i < _names.length; i++) {
+        for(uint256 i = 0; i < _names.length; i++){
             uint256[2][2] memory initCount;
             initCount[0][0] = 0;
             initCount[0][1] = 1;
@@ -47,6 +64,67 @@ contract ballotManager{
                 voteCount: initCount
             }));
         }
+        for(uint256 i = 0; i < _shareholderAddress.length; i++){
+            whiteList[_shareholderAddress[i]] = shareholder({
+                shareholderId: i+1,
+                isActive: true
+            });
+            uint256[2][3] memory initCount;
+            initCount[0][0] = 0;
+            initCount[0][1] = 1;
+            initCount[1][0] = 0;
+            initCount[1][1] = 1;
+            initCount[2][0] = 0;
+            initCount[2][1] = 1;
+            shareholderSubmitInfo[i+1] = shareholderSi({
+                Si: initCount,
+                isSubmitted: false
+            });
+        }
+    }
+
+    function babyAdd(uint256 x1, uint256 y1, uint256 x2, uint256 y2) public pure returns (uint256 x3, uint256 y3){
+        uint256 x1x2 = mulmod(x1, x2, Q);
+        uint256 y1y2 = mulmod(y1, y2, Q);
+        uint256 dx1x2y1y2 = mulmod(D, mulmod(x1x2, y1y2, Q), Q);
+
+        uint256 x3_num = addmod(mulmod(x1, y2, Q), mulmod(y1, x2, Q), Q);
+        uint256 y3_num = addmod(y1y2, Q - mulmod(A, x1x2, Q), Q);
+
+        uint256 x3_den_inv = modInverse(addmod(1, dx1x2y1y2, Q), Q);
+        uint256 y3_den_inv = modInverse(addmod(1, Q - dx1x2y1y2, Q), Q);
+
+        x3 = mulmod(x3_num, x3_den_inv, Q);
+        y3 = mulmod(y3_num, y3_den_inv, Q);
+    }
+
+    // a^(p-2) ≡ a^-1 (mod p)
+    function modInverse(uint256 n, uint256 mod) internal pure returns (uint256){
+        return power(n, mod - 2, mod);
+    }
+
+    function power(uint256 base, uint256 exp, uint256 mod) internal pure returns (uint256 res){
+        res = 1;
+        base = base % mod;
+        while (exp > 0) {
+            if (exp % 2 == 1) res = mulmod(res, base, mod);
+            base = mulmod(base, base, mod);
+            exp = exp >> 1;
+        }
+    }
+
+    function babyMul(uint256 k, uint256[2] memory P) public pure returns(uint256[2] memory){
+        uint256[2] memory result = [uint256(0), uint256(1)];
+        uint256[2] memory base = P;
+
+        while (k > 0) {
+            if (k & 1 == 1) {
+                (result[0], result[1]) = babyAdd(result[0], result[1], base[0], base[1]);
+            }
+            (base[0], base[1]) = babyAdd(base[0], base[1], base[0], base[1]);
+            k >>= 1;
+        }
+        return result;
     }
 
     function vote(
@@ -54,7 +132,7 @@ contract ballotManager{
         uint[2][2] memory _proofb,
         uint[2] memory _proofc,
         uint[17] memory _input
-    ) public {
+    ) public{
         // check
         require(block.timestamp < votingDeadline, "Voting period has ended!!!");
         require(_input[14] == root, "Invalid root!!!");
@@ -65,16 +143,28 @@ contract ballotManager{
         
         // update state
         hasVoted_nullifier[_input[0]] = true;
-        for (uint256 i = 0; i < candidates.length; i++) {
-            candidates[i].voteCount[0][0] += _input[i*2+1];
-            candidates[i].voteCount[0][1] += _input[i*2+2];
-            candidates[i].voteCount[1][0] += _input[i*2+7];
-            candidates[i].voteCount[1][1] += _input[i*2+8];
+        for(uint256 i = 0; i < candidates.length; i++){
+            // c1
+            (candidates[i].voteCount[0][0], candidates[i].voteCount[0][1]) = babyAdd(_input[i*2+1], _input[i*2+2], candidates[i].voteCount[0][0], candidates[i].voteCount[0][1]);
+            // c2
+            (candidates[i].voteCount[1][0], candidates[i].voteCount[1][1]) = babyAdd(_input[i*2+7], _input[i*2+8], candidates[i].voteCount[1][0], candidates[i].voteCount[1][1]);
         }
         emit Vote(_input[0], candidates[0].voteCount, candidates[1].voteCount, candidates[2].voteCount);
     }
 
     function getCandidates() public view returns(candidate[] memory){
         return candidates;
+    }
+
+    function submitSi(uint256[2][3] memory _S) public{
+        // require(block.timestamp > votingDeadline, "Voting period has not ended!!!");
+        require(whiteList[msg.sender].isActive, "You are not the shareholder");
+        // require(!shareholderSubmitInfo[whiteList[msg.sender].shareholderId].isSubmitted, "You have already submitted.");
+        shareholderSubmitInfo[whiteList[msg.sender].shareholderId].Si = _S;
+        shareholderSubmitInfo[whiteList[msg.sender].shareholderId].isSubmitted = true;
+    }
+
+    function getShares(uint256 _shareholderId) public view returns(uint256[2][3] memory){
+        return shareholderSubmitInfo[_shareholderId].Si;
     }
 }
