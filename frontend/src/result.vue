@@ -31,6 +31,8 @@ const choiceshareholder = [
 const candidates = ref([{ name: 'LIN', votes: 0 }, { name: 'KUAN', votes: 0 }, { name: 'HAO', votes: 0 }]);
 const candidateColors = ['#008000', '#0000AA', '#28C8C8'];
 const candidateLogos = [greenLogo, blueLogo, whiteLogo];
+const loading = ref(false);
+const loadingMessage = ref('');
 
 const getTotalVotes = () => {
     return candidates.value.reduce((sum, c) => sum + (c.votes || 0), 0);
@@ -149,6 +151,9 @@ const pointsEqual = (p1, p2) => {
 };
 
 const fetchVotesFromContract = async () => {
+    loading.value = true;
+    loadingMessage.value = '計算中...';
+    
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
@@ -158,6 +163,7 @@ const fetchVotesFromContract = async () => {
         ];
         const contract = new ethers.Contract(contractAddress, abi, provider);
         const shareholderIndices = choiceshareholder[currentIndex.value-1];
+        
         const c2Values = await getC2(contract);
         const siValues = await getSi(contract, shareholderIndices);
         const lamda = getLamda(shareholderIndices);
@@ -187,6 +193,7 @@ const fetchVotesFromContract = async () => {
             const zeroPoint = [0n, 1n];
             let tempPoint = zeroPoint;
             voteCounts[i] = 0;
+            
             for (let j = 0; j <= 10**5; j++) {
                 if (pointsEqual(M, tempPoint)) {
                     voteCounts[i] = j;
@@ -202,8 +209,11 @@ const fetchVotesFromContract = async () => {
             votes: voteCounts[index]
         }));
         
+        loading.value = false;
+        
     } catch (error) {
         console.error('Error fetching votes:', error);
+        loading.value = false;
     }
 }
 
@@ -214,6 +224,13 @@ watch(currentIndex, () => {
 
 <template>
 <div class="vote-container">
+    <div v-if="loading" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="loading-text">{{ loadingMessage }}</p>
+        </div>
+    </div>
+    
     <div class="candidates-container">
           <div v-for="(candidate, index) in candidates" :key="index" 
               class="candidate-card"
@@ -397,5 +414,39 @@ watch(currentIndex, () => {
     .candidate-ticket {
         padding: 20px 0;
     }
+}
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.loading-content {
+    text-align: center;
+    color: white;
+}
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.loading-text {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
 }
 </style>
