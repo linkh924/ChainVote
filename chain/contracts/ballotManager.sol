@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "./verifier.sol";
 // import "./babyJub.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
+import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 
-contract ballotManager{
+contract ballotManager is FunctionsClient{
+    using Strings for uint256;
+    using FunctionsRequest for FunctionsRequest.Request;
     Groth16Verifier public verifier;
     uint256 constant Q = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 constant A = 168700;
@@ -22,6 +27,15 @@ contract ballotManager{
     mapping(uint256 => bool) public hasVoted_nullifier;
     uint256[2] public pk;
     uint256 public votingDeadline;
+
+    uint256 public totalSubmit = 0;
+    // bool public hasCal = false;
+    uint256 public subscriptionId;
+    string public oracleSourceCode; // js
+    uint256[] public resultVoting;
+    address router = 0xc225964D70c738a5E1657cE07213444b36540306;
+    bytes32 donId = 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000;
+    
 
     struct shareholder{
         uint256 shareholderId;
@@ -45,8 +59,10 @@ contract ballotManager{
         string[] memory _names,
         string[] memory _ipfsCID,
         uint256 _durationTime,
-        address[5] memory _shareholderAddress
-    ){
+        address[5] memory _shareholderAddress,
+        uint256 _subscriptionId,
+        string memory _oracleSourceCode
+    )FunctionsClient(router){
         verifier = Groth16Verifier(_verifierAddress);
         root = _officialRoot;
         nullifier = _nullifier;
@@ -81,6 +97,8 @@ contract ballotManager{
                 isSubmitted: false
             });
         }
+        subscriptionId = _subscriptionId;
+        oracleSourceCode = _oracleSourceCode;
     }
 
     function babyAdd(uint256 x1, uint256 y1, uint256 x2, uint256 y2) public pure returns (uint256 x3, uint256 y3){
@@ -158,10 +176,31 @@ contract ballotManager{
 
     function submitSi(uint256[2][3] memory _S) public{
         // require(block.timestamp > votingDeadline, "Voting period has not ended!!!");
-        require(whiteList[msg.sender].isActive, "You are not the shareholder");
+        require(whiteList[msg.sender].isActive, "You are not the shareholder.");
         // require(!shareholderSubmitInfo[whiteList[msg.sender].shareholderId].isSubmitted, "You have already submitted.");
+        // require(!hasCal, "The final result has been calculated.");
+        if (!shareholderSubmitInfo[whiteList[msg.sender].shareholderId].isSubmitted){
+            totalSubmit += 1;
+        }
         shareholderSubmitInfo[whiteList[msg.sender].shareholderId].Si = _S;
         shareholderSubmitInfo[whiteList[msg.sender].shareholderId].isSubmitted = true;
+        if (totalSubmit == 5) {
+            requestOracleCal();
+        }
+    }
+
+    function requestOracleCal() internal{
+        // hasCal = true;
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(oracleSourceCode);
+        string[] memory args = new string[](1);
+        args[0] = Strings.toHexString(uint160(address(this)), 20);
+        req.setArgs(args);
+        _sendRequest(req.encodeCBOR(), uint64(subscriptionId), 500000, donId);
+    }
+
+    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
+        resultVoting = abi.decode(response, (uint256[]));
     }
 
     function getShares(uint256 _shareholderId) public view returns(uint256[2][3] memory){

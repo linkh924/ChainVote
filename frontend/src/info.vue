@@ -68,7 +68,8 @@ const cal = async (skValue) => {
         const skBigInt = BigInt(skValue);
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+        // const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+        const contractAddress = '0xadCd80b2e5eA8D5a09dB938b5aA428ef5e6E70E9';
         const abi = [
             "function getCandidates() public view returns (tuple(string name, string ipfsCID, uint256[2][2] voteCount)[] memory)",
             "function submitSi(uint256[2][3] memory _S) public"

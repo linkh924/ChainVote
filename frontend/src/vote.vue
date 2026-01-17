@@ -51,7 +51,8 @@ const vote = async (index) => {
 const voteTocontract = async (argv) => {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'; // local hardhat
+    // const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'; // local hardhat
+    const contractAddress = '0xadCd80b2e5eA8D5a09dB938b5aA428ef5e6E70E9';
     const abi = [
         "function vote(uint[2] _proofa, uint[2][2] _proofb, uint[2] _proofc, uint[17] _input) public"
     ];
