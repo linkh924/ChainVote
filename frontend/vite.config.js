@@ -7,13 +7,11 @@ export default defineConfig({
   base: './',
   build: {
     cssCodeSplit: false,
+    assetsInlineLimit: 100000000, // 內嵌所有資源
     rollupOptions: {
       output: {
         manualChunks: undefined,
-        inlineDynamicImports: true,
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
+        inlineDynamicImports: true
       }
     }
   }
