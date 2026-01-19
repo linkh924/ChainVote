@@ -27,7 +27,7 @@ const handleVerify = async () => {
         return;
     }
     try {
-        const response = await axios.post('http://localhost:3001/api/verify', {
+        const response = await axios.post('https://chainvote-oracle.vercel.app/api/verify', {
             idCardNumber: idCardNumber.value,
             healthCardNumber: healthCardNumber.value
         });

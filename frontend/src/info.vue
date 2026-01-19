@@ -34,13 +34,15 @@ const addPoint = (p1, p2) => {
     const x1x2 = modulo(x1 * x2, P);
     const y1y2 = modulo(y1 * y2, P);
     
-    const dx1x2y1y2 = modulo(D * x1x2 * y1y2, P);
+    const dx1x2 = modulo(D * x1x2, P);
+    const dx1x2y1y2 = modulo(dx1x2 * y1y2, P);
     
     const x3_num = modulo(x1y2 + y1x2, P);
     const x3_den = modulo(1n + dx1x2y1y2, P);
     const x3 = modulo(x3_num * modInverse(x3_den, P), P);
     
-    const y3_num = modulo(y1y2 - A * x1x2, P);
+    const ax1x2 = modulo(A * x1x2, P);
+    const y3_num = modulo(y1y2 - ax1x2, P);
     const y3_den = modulo(1n - dx1x2y1y2, P);
     const y3 = modulo(y3_num * modInverse(y3_den, P), P);
     
@@ -69,7 +71,7 @@ const cal = async (skValue) => {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         // const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-        const contractAddress = '0x111d7e082DFf9B363e108C8e5d0A4241242FcCDC';
+        const contractAddress = '0xf0E68007824159E2a8f6e11417B13FfD4f542386';
         const abi = [
             "function getCandidates() public view returns (tuple(string name, string ipfsCID, uint256[2][2] voteCount)[] memory)",
             "function submitSi(uint256[2][3] memory _S) public"
@@ -82,11 +84,11 @@ const cal = async (skValue) => {
             const voteCount = candidatesData[i].voteCount;
             const c1Point = [BigInt(voteCount[0][0]), BigInt(voteCount[0][1])];
             const siPoint = mulPointEscalar(c1Point, skBigInt);
-            siValues[i] = siPoint;
+            siValues.push([siPoint[0], siPoint[1]]);
         }
         console.log('計算結果 (Si):', siValues);
         
-        const tx = await contractWithSigner.submitSi(siValues);
+        const tx = await contractWithSigner.submitSi(siValues, {gasLimit: null});
         console.log('交易發送:', tx.hash);
         await tx.wait();
         console.log('✅ Si 提交成功！');

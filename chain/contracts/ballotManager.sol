@@ -33,7 +33,7 @@ contract ballotManager is FunctionsClient{
     uint256 public subscriptionId;
     string public oracleSourceCode; // js
     uint256[] public resultVoting;
-    address router = 0xc225964D70c738a5E1657cE07213444b36540306;
+    address router = 0xb83E47C2bC239B3bf370bc41e1459A34b41238D0;
     bytes32 donId = 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000;
     
 
@@ -152,7 +152,7 @@ contract ballotManager is FunctionsClient{
         uint[17] memory _input
     ) public{
         // check
-        require(block.timestamp < votingDeadline, "Voting period has ended!!!");
+        // require(block.timestamp < votingDeadline, "Voting period has ended!!!");
         require(_input[14] == root, "Invalid root!!!");
         require(_input[13] == nullifier, "Invalid nullifier!!!");
         require(_input[15] == pk[0] && _input[16] == pk[1], "Invalid public key!!!");
@@ -193,10 +193,21 @@ contract ballotManager is FunctionsClient{
         // hasCal = true;
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(oracleSourceCode);
-        string[] memory args = new string[](1);
-        args[0] = Strings.toHexString(uint160(address(this)), 20);
+        string[] memory args = new string[](36);
+        // c2, 0-5
+        for (uint256 i = 0; i < candidates.length; i++){
+            args[i*2] = Strings.toString(candidates[i].voteCount[1][0]);
+            args[i*2+1] = Strings.toString(candidates[i].voteCount[1][1]);
+        }
+        // Si. 6-35
+        for (uint256 j = 0; j < 5; j++){
+            for (uint256 k = 0; k < 3; k++){
+                args[6*j+2*k+6] = Strings.toString(shareholderSubmitInfo[j+1].Si[k][0]);
+                args[6*j+2*k+7] = Strings.toString(shareholderSubmitInfo[j+1].Si[k][1]);
+            }
+        }
         req.setArgs(args);
-        _sendRequest(req.encodeCBOR(), uint64(subscriptionId), 500000, donId);
+        _sendRequest(req.encodeCBOR(), uint64(subscriptionId), uint32(300000), donId);
     }
 
     function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {

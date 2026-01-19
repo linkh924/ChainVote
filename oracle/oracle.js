@@ -4,6 +4,7 @@ const A = 168700n;
 const D = 168696n;
 const Gx = 5299619240641551281634865583518297030282874472190772894086521144482721001553n;
 const Gy = 16950150798460657717958625567821834550301663161624707787222815936182638968203n;
+const G = [Gx, Gy];
 const choiceshareholder = [
     [1, 2, 3],
     [1, 2, 4],
@@ -17,34 +18,22 @@ const choiceshareholder = [
     [3, 4, 5]
 ];
 
-// 3key * 3candidate * 2point = 18values
-const getSi = async (contract, shareholderIndices) => {
-    const siValues = [];
-    for (let i = 0; i < shareholderIndices.length; i++) {
-        const siData = await contract.getShares(shareholderIndices[i]);
-        siValues[i] = [];
-        for (let j = 0; j < 3; j++){
-            siValues[i][j][0] = siData[j][0];
-            siValues[i][j][1] = siData[j][1];
-        }
-    }
-    return siValues;
+const C2 = [];
+let index = 0;
+for (let i = 0; i < 3; i++) {
+    C2.push([BigInt(args[index++]), BigInt(args[index++])]);
 }
 
-// 3candidate * 2points = 6values 
-const getC2 = async (contract) => {
-    const candidatesData = await contract.getCandidates();
-    const c2Values = [];
-    for (let i = 0; i < candidatesData.length; i++) {
-        const voteCount = candidatesData[i].voteCount;
-        c2Values[i] = [];
-        c2Values[i][0] = voteCount[1][0];
-        c2Values[i][1] = voteCount[1][1];
+const Si = [];
+for (let i = 0; i < 5; i++) {
+    const si = [];
+    for (let j = 0; j < 3; j++) {
+        si.push([BigInt(args[index++]), BigInt(args[index++])]);
     }
-    return c2Values;
+    Si.push(si);
 }
 
-const calLamda = async(shareholderIndices) => {
+const calLamda = (shareholderIndices) => {
     const lamda = [];
     for (let i = 0; i < shareholderIndices.length; i++) {
         let result = 1n;
@@ -121,39 +110,28 @@ const negatePoint = (point) => {
     return [modulo(-point[0], P), point[1]];
 };
 
+// start
 const result = [];
-// const provider = new ethers.BrowserProvider(window.ethereum);
-const contractAddress = args[0];
-const abi = [
-    "function getCandidates() public view returns (tuple(string name, string ipfsCID, uint256[2][2] voteCount)[] memory)",
-    "function getShares(uint256) public view returns (uint256[2][3])"
-];
-const contract = new ethers.Contract(contractAddress, abi, provider);
-const G = [Gx, Gy];
-const c2Values = await getC2(contract);
-const voteCounts = [0, 0, 0];
-let tempCount = null;
 
 for (let i = 0; i < choiceshareholder.length; i++) {
     const shareholderIndices = choiceshareholder[i];
-    const siValues = await getSi(contract, shareholderIndices);
-    const lamda = await calLamda(shareholderIndices);
-    let currentCount = [0, 0, 0];
+    const lamda = calLamda(shareholderIndices);
+    const currentCount = [];
+
     for (let j = 0; j < 3; j++) {
-        const c2 = [BigInt(c2Values[j][0]), BigInt(c2Values[j][1])];
-        let count = null;
+        let count = [0n, 1n];
         for (let k = 0; k < 3; k++) {
-            const Si = [BigInt(siValues[k][j][0]), BigInt(siValues[k][j][1])];
+            const tempSi = Si[shareholderIndices[k]-1][j]; 
             if (k === 0) {
-                count = mulPointScalar(Si, lamda[k]);
+                count = mulPointScalar(tempSi, lamda[k]);
             } else {
-                count = addPoint(count, mulPointScalar(Si, lamda[k]));
+                count = addPoint(count, mulPointScalar(tempSi, lamda[k]));
             }
         }
         const negS = negatePoint(count);
-        const M = addPoint(c2, negS);
+        const M = addPoint(C2[j], negS);
         let tempPoint = [0n, 1n];
-        for (let l = 0; l <= 10**3; l++) {
+        for (let l = 0; l <= 10**2; l++) {
             if (M[0] === tempPoint[0] && M[1] === tempPoint[1]) {
                 currentCount[j] = l;
                 break;
@@ -162,14 +140,26 @@ for (let i = 0; i < choiceshareholder.length; i++) {
         }
     }
     if (i !== 0) {
-        if (tempCount[0] === currentCount[0] && tempCount[1] === currentCount[1] && tempCount[2] === currentCount[2]) {
+        if (currentCount[0] === result[0] && currentCount[1] === result[1] && currentCount[2] === result[2]) {
             continue;
         } else {
-            return ethers.getBytes(ethers.AbiCoder.defaultAbiCoder().encode(["uint256[]"], [[0,0,0]]));
+            result = [0,0,0];
+            break;
         }
+    } else {
+        result[0] = currentCount[0];
+        result[1] = currentCount[1];
+        result[2] = currentCount[2];
     }
-    tempCount = [...currentCount];
-    voteCounts = [...currentCount];
 }
-const encoded = ethers.AbiCoder.defaultAbiCoder().encode(["uint256[]"], [voteCounts]);
-return ethers.getBytes(encoded);
+
+const toBytes32 = (num) => BigInt(num).toString(16).padStart(64, '0');
+const offset = toBytes32(32);
+const length = toBytes32(result.length);
+const encodedValues = result.map(v => toBytes32(v)).join('');
+const hexString = offset + length + encodedValues;
+const encodedResult = new Uint8Array(hexString.length / 2);
+for (let i = 0; i < hexString.length; i += 2) {
+    encodedResult[i / 2] = parseInt(hexString.substr(i, 2), 16);
+}
+return encodedResult;

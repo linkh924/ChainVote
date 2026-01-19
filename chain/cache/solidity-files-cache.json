@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/lkh/Desktop/chainvote/chain/contracts/ballotManager.sol": {
-      "lastModificationDate": 1768691539462,
-      "contentHash": "bb6d3a63338f1876550d7fdccf145770",
+      "lastModificationDate": 1768786644035,
+      "contentHash": "f0d352e288a1c6f99202ae16f9aafc37",
       "sourceName": "contracts/ballotManager.sol",
       "solcConfig": {
         "version": "0.8.19",
