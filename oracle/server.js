@@ -31,5 +31,5 @@ app.post('/api/verify', async (req, res) => {
 });
 
 app.listen(3001, () => {
-    console.log("Oracle on http://localhost:3001");
+    console.log("Oracle server running on http://localhost:3001");
 });
