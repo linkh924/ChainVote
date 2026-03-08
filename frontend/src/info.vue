@@ -71,7 +71,7 @@ const cal = async (skValue) => {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         // const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-        const contractAddress = '0xfeb583155aE2cB7c1E30DBe86019caCA7CBC6414';
+        const contractAddress = '0x15b880bD6B4189e38f36517D3d132763a91EF252';
         const abi = [
             "function getCandidates() public view returns (tuple(string name, string ipfsCID, uint256[2][2] voteCount)[] memory)",
             "function submitSi(uint256[2][3] memory _S) public"
