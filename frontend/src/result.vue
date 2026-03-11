@@ -157,7 +157,7 @@ const fetchVotesFromContract = async () => {
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         // const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
-        const contractAddress = '0x15b880bD6B4189e38f36517D3d132763a91EF252';
+        const contractAddress = '0x176707d8b198E49e64682f6d695032d54f3C34fa';
         const abi = [
             "function getCandidates() public view returns (tuple(string name, string ipfsCID, uint256[2][2] voteCount)[] memory)",
             "function getShares(uint256) public view returns (uint256[2][3])"
